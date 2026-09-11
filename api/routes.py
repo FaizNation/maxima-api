@@ -1,9 +1,11 @@
 """
-Definisi Endpoint RESTful API untuk Deteksi Penyakit Daun Jeruk Bali (Pomelo).
+Definisi Endpoint RESTful API untuk Deteksi Penyakit Daun Jeruk Bali (Pomelo)
+serta Asisten AI Multimodal 'Maxist'.
 
 Modul ini mengelola rute:
 1. GET  /               : Health check server dan informasi sistem.
 2. POST /api/v1/predict : Prediksi penyakit daun menggunakan pipeline Two-Step Verification.
+3. POST /api/v1/chat    : Chatbot cerdas Maxist (Gemini 1.5 Flash multimodal).
 """
 
 import os
@@ -11,11 +13,17 @@ import traceback
 from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
 from services.ai_service import ai_service, InvalidImageError
+from services.chat_service import (
+    generate_maxist_response,
+    ChatServiceError,
+    MissingApiKeyError,
+    ImageDownloadError
+)
 
 # Inisialisasi Blueprint API
 api_bp = Blueprint("api", __name__)
 
-# Ekstensi file gambar yang diizinkan
+# Ekstensi file gambar yang diizinkan untuk endpoint prediksi
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
 
@@ -47,16 +55,16 @@ def health_check():
               example: Pomelo Disease Detection API is running healthy.
             version:
               type: string
-              example: 1.0.0
+              example: 1.1.0
             architecture:
               type: string
-              example: Two-Step Verification (Gatekeeper MobileNetV2 + Expert VGG16)
+              example: Two-Step Verification (Gatekeeper MobileNetV2 + Expert VGG16) & Maxist Chatbot (Gemini 1.5 Flash)
     """
     return jsonify({
         "status": "success",
         "message": "Pomelo Disease Detection API is running healthy.",
-        "version": "1.0.0",
-        "architecture": "Two-Step Verification (Gatekeeper MobileNetV2 + Expert VGG16)",
+        "version": "1.1.0",
+        "architecture": "Two-Step Verification (Gatekeeper MobileNetV2 + Expert VGG16) & Maxist Chatbot (Gemini 1.5 Flash)",
         "classes": ai_service.labels
     }), 200
 
@@ -200,4 +208,175 @@ def predict():
         return jsonify({
             "status": "error",
             "message": f"Terjadi kesalahan internal server saat memproses gambar: {str(e)}"
+        }), 500
+
+
+@api_bp.route("/api/v1/chat", methods=["POST"])
+def chat():
+    """
+    Chatbot Cerdas Maxist (Multimodal Gemini 1.5 Flash)
+    ---
+    tags:
+      - Chatbot Asisten Maxist
+    summary: Konsultasi percakapan multimodal dengan asisten AI Maxist
+    description: >
+      Menerima pesan pertanyaan petani, riwayat percakapan sebelumnya, konteks database dari Express.js,
+      serta URL gambar foto scan daun (opsional) untuk dianalisis secara multimodal oleh Gemini 1.5 Flash.
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Payload percakapan dengan asisten Maxist
+        schema:
+          type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+              description: Pesan atau pertanyaan dari petani/pengguna.
+              example: "Bagaimana cara mengatasi bercak ganggang pada daun jeruk bali saya?"
+            history:
+              type: array
+              description: Riwayat percakapan sebelumnya.
+              items:
+                type: object
+                properties:
+                  role:
+                    type: string
+                    example: user
+                  parts:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Halo Maxist"]
+              example:
+                - role: user
+                  parts: ["Halo Maxist, saya petani jeruk bali."]
+                - role: model
+                  parts: ["Halo Bapak/Ibu Petani! Ada yang bisa Maxist bantu seputar kebun jeruk bali Anda hari ini?"]
+            db_context:
+              type: string
+              description: Konteks riwayat scan atau data tanaman dari Express.js.
+              example: "Hasil scan terakhir: Terindikasi Bercak Ganggang (Cephaleuros virescens) dengan tingkat keyakinan 98.45%."
+            image_url:
+              type: string
+              description: URL gambar daun jeruk bali yang ingin dibahas bersama asisten.
+              example: "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d"
+    responses:
+      200:
+        description: Balasan berhasil didapatkan dari asisten Maxist.
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            data:
+              type: object
+              properties:
+                reply:
+                  type: string
+                  example: "Halo Bapak/Ibu Petani! Untuk mengatasi bercak ganggang pada daun jeruk bali..."
+      400:
+        description: Request tidak valid (parameter message tidak ada, format JSON salah, atau gagal download gambar).
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: fail
+            message:
+              type: string
+              example: Parameter 'message' wajib diisi dan tidak boleh kosong.
+      500:
+        description: Kesalahan internal server atau kegagalan API Gemini.
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: error
+            message:
+              type: string
+              example: Terjadi kesalahan saat memproses percakapan dengan AI.
+    """
+    # 1. Validasi format Content-Type JSON
+    if not request.is_json:
+        return jsonify({
+            "status": "fail",
+            "message": "Content-Type request harus berupa 'application/json'."
+        }), 400
+
+    # 2. Parsing payload JSON
+    data = request.get_json(silent=True)
+    if not data or not isinstance(data, dict):
+        return jsonify({
+            "status": "fail",
+            "message": "Format payload JSON tidak valid atau kosong."
+        }), 400
+
+    # 3. Validasi parameter 'message' yang wajib diisi
+    message = data.get("message")
+    if not message or not str(message).strip():
+        return jsonify({
+            "status": "fail",
+            "message": "Parameter 'message' wajib diisi dan tidak boleh kosong."
+        }), 400
+
+    # 4. Ambil parameter opsional (history, db_context, image_url)
+    history = data.get("history", [])
+    db_context = data.get("db_context")
+    image_url = data.get("image_url")
+
+    # 5. Eksekusi pemanggilan ke layanan AI Chatbot Maxist
+    try:
+        reply = generate_maxist_response(
+            message=str(message).strip(),
+            history=history,
+            db_context=db_context,
+            image_url=image_url
+        )
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "reply": reply
+            }
+        }), 200
+
+    except MissingApiKeyError as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+    except ImageDownloadError as e:
+        return jsonify({
+            "status": "fail",
+            "message": str(e)
+        }), 400
+
+    except ValueError as e:
+        return jsonify({
+            "status": "fail",
+            "message": str(e)
+        }), 400
+
+    except ChatServiceError as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+    except Exception as e:
+        print(f"[ERROR CHAT] {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "message": f"Terjadi kesalahan internal server saat memproses pesan: {str(e)}"
         }), 500

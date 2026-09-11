@@ -1,9 +1,10 @@
-# 🍊 Pomelo Leaf Disease Detection API
-### *High-Performance Two-Step Verification AI System for Citrus maxima Health Diagnosis*
+# 🍊 Pomelo Leaf Disease Detection & Maxist AI Chatbot API
+### *High-Performance Two-Step Verification AI & Multimodal Assistant for Citrus maxima Health Diagnosis*
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0%2B-black.svg?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.16%2B-orange.svg?logo=tensorflow&logoColor=white)](https://tensorflow.org/)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-1.5_Flash-8E75B2.svg?logo=googlegemini&logoColor=white)](https://aistudio.google.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Swagger](https://img.shields.io/badge/Swagger-UI_Enabled-85EA2D.svg?logo=swagger&logoColor=black)](http://localhost:5000/apidocs)
 
@@ -11,15 +12,52 @@
 
 ## 📌 Gambaran Umum Proyek
 
-**Pomelo Leaf Disease Detection API** adalah layanan RESTful API berbasis microservice yang dirancang khusus untuk mendeteksi dan mengklasifikasikan penyakit pada daun jeruk bali (*Citrus maxima*). Sistem ini mengusung arsitektur inovatif **"Two-Step Verification" (Gatekeeper & Expert Model)** guna memastikan tingkat akurasi tinggi serta mencegah terjadinya *false positive* dari citra non-target.
+**MAXIMA AI Microservice API** adalah layanan kecerdasan buatan berbasis Flask yang dirancang khusus untuk mendukung ekosistem pertanian modern pada komoditas jeruk bali (*Citrus maxima*). Layanan ini bertindak sebagai AI Microservice berkinerja tinggi yang dikonsumsi oleh backend utama (Express.js), menyediakan dua kapabilitas utama:
 
-Layanan ini dilengkapi dengan basis pengetahuan (*knowledge base*) komprehensif berbahasa Indonesia yang secara otomatis memberikan nama umum penyakit, tingkat bahaya, deskripsi klinis, dan langkah-langkah penanganan serta mitigasi bagi petani dan praktisi pertanian.
+1. **Two-Step Verification Disease Classifier:** Sistem diagnosis bertahap yang menggabungkan model *Gatekeeper* (MobileNetV2 Sigmoid) untuk menyaring citra non-daun dan model *Expert* (VGG16 Softmax) untuk mengklasifikasikan 4 jenis kondisi daun, diperkaya oleh basis pengetahuan (*knowledge base*) rekomendasi penanganan.
+2. **"Maxist" Multimodal AI Assistant:** Asisten konsultasi interaktif bertenaga **Google Gemini 1.5 Flash** yang mampu menjawab pertanyaan petani secara ramah dan sopan, menganalisis riwayat hasil pemindaian (`db_context`), serta meninjau foto daun secara multimodal via tautan gambar (`image_url`).
+
+---
+
+## 🤖 Fitur Chatbot Multimodal "Maxist" (Gemini 1.5 Flash)
+
+**Maxist** hadir sebagai mitra cerdas bagi para petani jeruk bali dalam memahami kondisi kebun mereka secara komprehensif:
+
+```
+[ Express.js Backend / Frontend Client ]
+                   │
+                   ▼ (POST /api/v1/chat)
+┌─────────────────────────────────────────────────────────────┐
+│  Payload JSON:                                              │
+│  - message    : Pertanyaan petani (wajib)                  │
+│  - history    : Riwayat percakapan sesi (opsional)          │
+│  - db_context : Data riwayat scan dari database (opsional)  │
+│  - image_url  : Tautan foto daun jeruk bali (opsional)      │
+└─────────────────────────────────────────────────────────────┘
+                   │
+         [ Apakah image_url ada? ]
+         ├── YA ──► Unduh gambar ke buffer memori (In-Memory PIL RGB)
+         │          Kirim [Image + Text Prompt + Konteks] ke Gemini 1.5 Flash
+         │          (Analisis Citra Multimodal Langsung)
+         │
+         └── TIDAK ─► Susun riwayat percakapan (formatted_history)
+                     Injeksi [Konteks Database] secara natural
+                     Kirim percakapan ke Gemini 1.5 Flash Chat Session
+                   │
+                   ▼
+       HTTP 200 OK: {"status": "success", "data": {"reply": "..."}}
+```
+
+### Karakteristik & Persona Maxist:
+- **Ramah Petani:** Menggunakan bahasa Indonesia yang mudah dipahami, hangat, solutif, dan bebas jargon teknis yang membingungkan.
+- **Konteks Database Natural:** Menjelaskan data riwayat scan tanpa menggunakan istilah teknis seperti "sistem" atau "database".
+- **Multimodal Cepat & Akurat:** Menggunakan model `gemini-1.5-flash` dengan latensi rendah untuk inferensi teks maupun citra beresolusi tinggi.
 
 ---
 
 ## 🏛️ Arsitektur "Two-Step Verification"
 
-Dalam implementasi *computer vision* dunia nyata, pengguna sering kali mengunggah gambar latar belakang acak, tangan, tanah, atau daun tanaman lain. Untuk mengatasi kelemahan model klasifikasi tunggal yang memaksakan prediksi pada objek acak, kami menerapkan arsitektur dua tahap:
+Sistem klasifikasi penyakit daun mengeliminasi *false positives* dengan menyaring gambar acak (bukan daun jeruk bali) sebelum diproses ke model pakar:
 
 ```
 [ User Uploads Image ]
@@ -67,33 +105,29 @@ Dalam implementasi *computer vision* dunia nyata, pengguna sering kali mengungga
     HTTP 200 OK (Structured JSON Response)
 ```
 
-### Keunggulan Arsitektur Ini:
-1. **Pencegahan Halusinasi Model**: Citra non-daun jeruk bali langsung ditolak di pintu gerbang (*gatekeeper*) tanpa membebani model pakar.
-2. **Efisiensi Sumber Daya**: MobileNetV2 sangat ringan dan cepat mengeksekusi penyaringan awal.
-3. **Akurasi Diagnostik Tinggi**: Model pakar VGG16 hanya berfokus pada diferensiasi penyakit daun jeruk bali yang valid.
-
 ---
 
 ## 📂 Struktur Proyek Modular
-
-Struktur direktori disusun secara rapi dan modular sesuai prinsip *Clean Architecture* dan *Separation of Concerns*:
 
 ```text
 maxima-api/
 ├── api/
 │   ├── __init__.py               # Inisialisasi package API
-│   └── routes.py                 # Definisi routing, validasi input, dan Swagger docstrings
+│   └── routes.py                 # Endpoint GET /, POST /api/v1/predict, & POST /api/v1/chat
 ├── services/
 │   ├── __init__.py               # Inisialisasi package services
-│   └── ai_service.py             # Preprocessing citra, loading model, dan Two-Step pipeline
+│   ├── ai_service.py             # Preprocessing citra, loading Keras model, & pipeline 2-tahap
+│   └── chat_service.py           # Layanan Chatbot Maxist multimodal (Gemini 1.5 Flash)
 ├── utils/
 │   ├── __init__.py               # Inisialisasi package utils
 │   └── knowledge_base.py         # Basis data edukasi penyakit dan penanganan
-├── app.py                        # Entry point Flask, CORS, konfigurasi Swagger, dan error handlers
-├── requirements.txt              # Daftar dependensi pustaka Python
-├── Dockerfile                    # Konfigurasi container image Docker berbasis python:3.10-slim
-├── docker-compose.yml            # Konfigurasi orkestrasi Docker Compose
-├── .dockerignore                 # Berkas yang dikecualikan dari proses build image Docker
+├── app.py                        # Entry point Flask, CORS, Swagger UI, & global error handling
+├── requirements.txt              # Dependensi pustaka Python
+├── Dockerfile                    # Containerization berbasis python:3.10-slim & Gunicorn
+├── docker-compose.yml            # Orkestrasi container Docker Compose
+├── .dockerignore                 # Pengecualian berkas build image Docker
+├── .gitignore                    # Pengecualian berkas version control Git
+├── .env.example                  # Template variabel lingkungan
 ├── model_satpam_pomelo.h5        # Model Gatekeeper (MobileNetV2 Sigmoid)
 ├── pomelo_disease_model.h5       # Model Expert (VGG16 Softmax 4 Kelas)
 ├── pomelo_labels.json            # Daftar label kelas klasifikasi
@@ -102,14 +136,23 @@ maxima-api/
 
 ---
 
-## 🌿 Knowledge Base Penyakit Daun Jeruk Bali
+## ⚙️ Konfigurasi Environment Variables
 
-| ID Kelas JSON | Nama Umum | Tingkat Bahaya | Deskripsi Utama | Tindakan Utama |
-|---|---|:---:|---|---|
-| `Pomelo_Cephaleuros_virescens` | Bercak Ganggang | **Sedang** | Bercak menonjol hijau kelabu hingga jingga akibat alga parasit *Cephaleuros virescens*. | Pangkas daun sakit, semprot fungisida tembaga, perbaiki aerasi tajuk. |
-| `Pomelo_Leaf_Miner` | Hama Pengorok Daun | **Tinggi** | Liang berliku keperakan pada daun muda akibat larva *Phyllocnistis citrella*. | Petik dan bakar daun bergejala, semprot minyak mimba (*neem oil*), pasang perangkap kuning. |
-| `Pomelo_Orange_Mold` | Jamur Kapang Oranye | **Tinggi** | Koloni jamur oranye tebal memicu klorosis hebat dan daun rontok prematur. | Isolasi tanaman, sanitasi gulma, semprot fungisida sistemik spektrum luas. |
-| `Pomelo_Healthy` | Daun Sehat | **Aman** | Daun segar, turgor baik, tidak ada gejala infeksi hama maupun jamur. | Lanjutkan pemupukan berimbang rutin, pertahankan drainase tanah prima. |
+Salin berkas template `.env.example` menjadi `.env`:
+```bash
+cp .env.example .env
+```
+
+Isi variabel konfigurasi berikut:
+```env
+# Port & Host server Flask
+PORT=5000
+HOST=0.0.0.0
+
+# API Key Google Gemini untuk Asisten Maxist (Wajib untuk fitur chat)
+# Dapatkan gratis di: https://aistudio.google.com/app/apikey
+GEMINI_API_KEY=AIzaSyYourGeminiApiKeyHere
+```
 
 ---
 
@@ -117,20 +160,19 @@ maxima-api/
 
 ### Prasyarat Sistem
 - Python 3.10+
-- Pip & Virtualenv
-- Git (opsional)
-- Docker & Docker Compose (jika menjalankan via container)
+- Git
+- Docker & Docker Compose (opsional)
 
 ---
 
 ### Opsi 1: Menjalankan Secara Lokal (Virtualenv)
 
-1. **Clone atau Masuk ke Direktori Proyek:**
+1. **Masuk ke Direktori Proyek:**
    ```bash
    cd maxima-api
    ```
 
-2. **Buat dan Aktifkan Virtual Environment:**
+2. **Buat & Aktifkan Virtual Environment:**
    - **Linux / macOS:**
      ```bash
      python3 -m venv venv
@@ -148,12 +190,12 @@ maxima-api/
    pip install -r requirements.txt
    ```
 
-4. **Jalankan Server:**
-   - **Mode Development (Flask):**
+4. **Jalankan Aplikasi:**
+   - **Mode Development:**
      ```bash
      python app.py
      ```
-   - **Mode Production (Gunicorn - Linux / WSL / Container):**
+   - **Mode Production (Gunicorn):**
      ```bash
      gunicorn --bind 0.0.0.0:5000 --workers 2 --threads 4 --timeout 120 app:app
      ```
@@ -164,14 +206,12 @@ maxima-api/
 
 ### Opsi 2: Menjalankan Menggunakan Docker & Docker Compose
 
-Proyek ini telah dikonfigurasi penuh untuk berjalan di dalam container Docker yang ringan berbasis `python:3.10-slim`.
-
 1. **Build dan Jalankan Container:**
    ```bash
    docker-compose up --build -d
    ```
 
-2. **Mengecek Status Container:**
+2. **Cek Status Container:**
    ```bash
    docker-compose ps
    ```
@@ -181,7 +221,7 @@ Proyek ini telah dikonfigurasi penuh untuk berjalan di dalam container Docker ya
    docker-compose logs -f pomelo-api
    ```
 
-4. **Menghentikan Container:**
+4. **Hentikan Container:**
    ```bash
    docker-compose down
    ```
@@ -190,30 +230,28 @@ Proyek ini telah dikonfigurasi penuh untuk berjalan di dalam container Docker ya
 
 ## 📖 Dokumentasi Interaktif Swagger UI
 
-Aplikasi dilengkapi dengan dokumentasi interaktif OpenAPI / Swagger UI yang dapat diakses langsung melalui browser:
+Akses dokumentasi interaktif OpenAPI / Swagger UI langsung melalui browser:
 
 👉 **URL Swagger UI:** [http://localhost:5000/apidocs](http://localhost:5000/apidocs)
 
-Melalui antarmuka Swagger, Anda dapat:
-- Melihat spesifikasi lengkap schema request dan response.
-- Mengunggah file gambar daun jeruk bali secara langsung (*Try it out*) untuk menguji inferensi tanpa perlu tools eksternal.
+Fitur Swagger UI:
+- Menguji endpoint klasifikasi daun dengan mengunggah gambar langsung (*multipart/form-data*).
+- Menguji endpoint percakapan asisten Maxist dengan payload JSON interaktif (*Try it out*).
 
 ---
 
 ## 📡 Dokumentasi Endpoint REST API
 
-### 1. Health Check & Informasi Sistem
+### 1. Health Check
 - **Method:** `GET`
 - **Path:** `/`
-- **Deskripsi:** Memeriksa status kesehatan server dan daftar kelas model AI aktif.
-
-**Contoh Response (`200 OK`):**
+- **Response (`200 OK`):**
 ```json
 {
   "status": "success",
   "message": "Pomelo Disease Detection API is running healthy.",
-  "version": "1.0.0",
-  "architecture": "Two-Step Verification (Gatekeeper MobileNetV2 + Expert VGG16)",
+  "version": "1.1.0",
+  "architecture": "Two-Step Verification (Gatekeeper MobileNetV2 + Expert VGG16) & Maxist Chatbot (Gemini 1.5 Flash)",
   "classes": [
     "Pomelo_Cephaleuros_virescens",
     "Pomelo_Healthy",
@@ -225,33 +263,96 @@ Melalui antarmuka Swagger, Anda dapat:
 
 ---
 
-### 2. Klasifikasi Penyakit Daun (Two-Step Verification)
+### 2. Chatbot Asisten Maxist (Multimodal)
+- **Method:** `POST`
+- **Path:** `/api/v1/chat`
+- **Content-Type:** `application/json`
+
+#### Schema Payload Request:
+| Field | Tipe | Status | Deskripsi |
+|---|---|:---:|---|
+| `message` | `string` | **Wajib** | Pertanyaan atau pesan dari pengguna/petani. |
+| `history` | `array` | Opsional | Riwayat percakapan sesi sebelumnya `[{"role": "user"|"model", "parts": [...]}]`. |
+| `db_context` | `string` | Opsional | Ringkasan riwayat scan dari database Express.js. |
+| `image_url` | `string` | Opsional | URL gambar daun jeruk bali jika ingin dibahas bersama asisten. |
+
+#### Contoh Request cURL:
+```bash
+curl -X POST "http://localhost:5000/api/v1/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Bagaimana cara penanganan bercak ganggang pada daun jeruk bali saya?",
+    "db_context": "Hasil scan terakhir: Terindikasi Bercak Ganggang (Cephaleuros virescens) dengan keyakinan 98.45%.",
+    "image_url": "https://example.com/uploads/scan_daun_pomelo.jpg",
+    "history": [
+      {
+        "role": "user",
+        "parts": ["Halo Maxist, saya petani jeruk bali."]
+      },
+      {
+        "role": "model",
+        "parts": ["Halo Bapak/Ibu Petani! Senang bertemu Anda. Ada yang bisa Maxist bantu seputar tanaman jeruk bali Anda?"]
+      }
+    ]
+  }'
+```
+
+#### Contoh Request Python:
+```python
+import requests
+
+url = "http://localhost:5000/api/v1/chat"
+payload = {
+    "message": "Tolong beri rekomendasi pupuk untuk menjaga daun jeruk bali tetap sehat.",
+    "db_context": "Pohon berusia 3 tahun, daun tergolong sehat."
+}
+
+response = requests.post(url, json=payload)
+print(response.json())
+```
+
+#### Contoh Response Sukses (`200 OK`):
+```json
+{
+  "status": "success",
+  "data": {
+    "reply": "Halo Bapak/Ibu Petani! Berdasarkan kondisi pohon jeruk bali Anda yang berusia 3 tahun dan dalam kondisi daun yang prima, kami menyarankan pemberian pupuk NPK seimbang (15-15-15) secara berkala setiap 3-4 bulan sekali. Selain itu, berikan pupuk kandang matang di sekeliling tajuk tanaman untuk menjaga kesuburan mikroorganisme tanah..."
+  }
+}
+```
+
+#### Contoh Response Validasi Gagal (`400 Bad Request`):
+```json
+{
+  "status": "fail",
+  "message": "Parameter 'message' wajib diisi dan tidak boleh kosong."
+}
+```
+
+#### Contoh Response API Key Belum Disetel (`500 Internal Server Error`):
+```json
+{
+  "status": "error",
+  "message": "GEMINI_API_KEY belum dikonfigurasi di environment variables. Harap tambahkan GEMINI_API_KEY pada file .env atau variabel lingkungan sistem."
+}
+```
+
+---
+
+### 3. Klasifikasi Penyakit Daun (Two-Step Verification)
 - **Method:** `POST`
 - **Path:** `/api/v1/predict`
 - **Content-Type:** `multipart/form-data`
 - **Body Parameter:**
-  - `file` (*binary/file*, wajib): File citra daun jeruk bali (`.jpg`, `.jpeg`, `.png`, `.webp`).
+  - `file` (*binary/file*, wajib): Citra daun jeruk bali (`.jpg`, `.jpeg`, `.png`, `.webp`).
 
-#### Contoh Pengujian via cURL:
+#### Contoh Request cURL:
 ```bash
 curl -X POST "http://localhost:5000/api/v1/predict" \
   -H "accept: application/json" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@/path/to/daun_jeruk_bali.jpg"
 ```
-
-#### Contoh Pengujian via Python Requests:
-```python
-import requests
-
-url = "http://localhost:5000/api/v1/predict"
-with open("daun_jeruk.jpg", "rb") as img:
-    files = {"file": ("daun_jeruk.jpg", img, "image/jpeg")}
-    response = requests.post(url, files=files)
-    print(response.json())
-```
-
----
 
 #### Contoh Response Sukses (`200 OK`):
 ```json
@@ -265,12 +366,11 @@ with open("daun_jeruk.jpg", "rb") as img:
       "nama_ilmiah": "Cephaleuros virescens (Algal Spot)",
       "nama_umum": "Bercak Ganggang",
       "bahaya": "Sedang",
-      "deskripsi": "Penyakit bercak ganggang disebabkan oleh alga parasit Cephaleuros virescens. Gejala ditandai dengan munculnya bercak melingkar yang agak menonjol seperti beludru berwarna hijau kelabu hingga jingga/karat pada permukaan atas daun jeruk bali.",
+      "deskripsi": "Penyakit bercak ganggang disebabkan oleh alga parasit Cephaleuros virescens...",
       "penanganan": [
-        "Pangkas daun dan ranting yang terinfeksi berat lalu bakar atau musnahkan jauh dari kebun.",
-        "Semprotkan fungisida berbahan aktif tembaga (copper-based fungicide seperti tembaga oksiklorida) secara merata.",
-        "Lakukan pemangkasan cabang secara berkala untuk meningkatkan sirkulasi udara dan penetrasi sinar matahari ke dalam tajuk tanaman.",
-        "Tingkatkan vigor tanaman melalui pemupukan seimbang, terutama kalium dan unsur mikro."
+        "Pangkas daun dan ranting yang terinfeksi berat lalu bakar atau musnahkan.",
+        "Semprotkan fungisida berbahan aktif tembaga secara merata.",
+        "Lakukan pemangkasan tajuk untuk memperbaiki sirkulasi udara dan intensitas cahaya matahari."
       ]
     },
     "verifikasi_satpam": {
@@ -287,8 +387,6 @@ with open("daun_jeruk.jpg", "rb") as img:
 }
 ```
 
----
-
 #### Contoh Response Ditolak Satpam / Gatekeeper (`400 Bad Request`):
 ```json
 {
@@ -300,50 +398,25 @@ with open("daun_jeruk.jpg", "rb") as img:
 
 ---
 
-#### Contoh Response Kesalahan Input Pengguna (`400 Bad Request`):
-```json
-{
-  "status": "fail",
-  "message": "Key 'file' tidak ditemukan dalam multipart form-data. Pastikan key input bernilai 'file'."
-}
-```
-
----
-
-#### Contoh Response Kesalahan Server (`500 Internal Server Error`):
-```json
-{
-  "status": "error",
-  "message": "Terjadi kesalahan internal server saat memproses gambar."
-}
-```
-
----
-
 ## 🤝 Panduan Kontribusi
-
-Kami menyambut gembira kontribusi dari komunitas peneliti AI, developer, dan praktisi pertanian! Untuk berkontribusi:
 
 1. **Fork Repositori ini**.
 2. **Buat Feature Branch:**
    ```bash
-   git checkout -b feature/FiturKerenBaru
+   git checkout -b feature/nama-fitur-baru
    ```
-3. **Lakukan Perubahan & Tulis Test Case:**
-   - Pastikan kode mengikuti standar PEP 8.
-   - Tambahkan dokumentasi jika mengubah/menambahkan fungsi.
-4. **Commit Perubahan:**
+3. **Commit Perubahan:**
    ```bash
-   git commit -m "feat: Menambahkan fitur deteksi segmentasi daun"
+   git commit -m "feat: Menambahkan fitur rekomendasi cuaca perkebunan"
    ```
-5. **Push ke Branch Anda:**
+4. **Push ke Branch Anda:**
    ```bash
-   git push origin feature/FiturKerenBaru
+   git push origin feature/nama-fitur-baru
    ```
-6. **Buka Pull Request (PR):** Berikan deskripsi yang jelas mengenai alasan dan pengujian fitur yang telah dibuat.
+5. **Buka Pull Request (PR)** dengan deskripsi pengujian yang jelas.
 
 ---
 
 ## 📄 Lisensi
 
-Proyek ini dilisensikan di bawah [MIT License](LICENSE). Bebas digunakan, dimodifikasi, dan didistribusikan untuk kepentingan edukasi, penelitian, maupun komersial.
+Proyek ini dilisensikan di bawah [MIT License](LICENSE).

@@ -1,8 +1,9 @@
 """
-Aplikasi Utama Flask - Pomelo Disease Detection API.
+Aplikasi Utama Flask - Pomelo Disease Detection API & Maxist Chatbot.
 
 Sistem RESTful API untuk klasifikasi penyakit daun jeruk bali (Pomelo)
-menggunakan arsitektur Two-Step Verification (Gatekeeper & Expert Model).
+menggunakan arsitektur Two-Step Verification (Gatekeeper & Expert Model)
+serta Chatbot Asisten Multimodal 'Maxist' berbasis Google Gemini 1.5 Flash.
 
 Inisialisasi:
 - Flask Framework
@@ -16,6 +17,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flasgger import Swagger
 from api.routes import api_bp
+
 
 def create_app() -> Flask:
     """
@@ -49,19 +51,20 @@ def create_app() -> Flask:
     swagger_template = {
         "swagger": "2.0",
         "info": {
-            "title": "Pomelo Leaf Disease Detection API",
+            "title": "Pomelo Leaf Disease Detection & Maxist AI Assistant API",
             "description": (
-                "RESTful API cerdas untuk klasifikasi penyakit daun jeruk bali (Citrus maxima) "
-                "menggunakan arsitektur Two-Step Verification.\n\n"
-                "**Alur Kerja Dua Langkah (Two-Step Pipeline):**\n"
-                "1. **Gatekeeper Model (MobileNetV2):** Memverifikasi apakah objek merupakan daun jeruk bali (skor sigmoid >= 0.5).\n"
-                "2. **Expert Model (VGG16):** Mengklasifikasikan jenis penyakit menjadi 4 kelas: "
-                "Bercak Ganggang (*Cephaleuros virescens*), Daun Sehat (*Healthy*), Pengorok Daun (*Leaf Miner*), "
-                "dan Jamur Kapang Oranye (*Orange Mold*), serta memberikan saran penanganan komprehensif."
+                "RESTful AI Microservice cerdas untuk platform MAXIMA:\n\n"
+                "1. **Two-Step Verification Disease Detection:**\n"
+                "   - **Gatekeeper (MobileNetV2 Sigmoid):** Verifikasi keaslian daun jeruk bali (skor >= 0.5).\n"
+                "   - **Expert Model (VGG16 Softmax):** Diagnosis 4 kondisi daun (*Algal Spot*, *Healthy*, *Leaf Miner*, *Orange Mold*) diperkaya rekomendasi solusi.\n\n"
+                "2. **Maxist Multimodal AI Assistant (Google Gemini 1.5 Flash):**\n"
+                "   - Konsultasi interaktif berbahasa Indonesia ramah petani.\n"
+                "   - Analisis citra daun langsung via `image_url` secara multimodal.\n"
+                "   - Integrasi konteks riwayat scan dari database Express.js (`db_context`)."
             ),
-            "version": "1.0.0",
+            "version": "1.1.0",
             "contact": {
-                "name": "Pomelo AI Engineering Team",
+                "name": "MAXIMA AI Engineering Team",
                 "email": "developer@pomelo-ai.local"
             },
             "license": {
@@ -77,6 +80,10 @@ def create_app() -> Flask:
             {
                 "name": "Prediksi Penyakit",
                 "description": "Endpoint inferensi AI Two-Step Verification"
+            },
+            {
+                "name": "Chatbot Asisten Maxist",
+                "description": "Endpoint percakapan AI multimodal Maxist (Google Gemini 1.5 Flash)"
             }
         ]
     }
@@ -126,10 +133,10 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     host = os.environ.get("HOST", "0.0.0.0")
 
-    print("=" * 65)
-    print("  POMELO LEAF DISEASE DETECTION API - TWO-STEP VERIFICATION")
+    print("=" * 70)
+    print("  POMELO LEAF DISEASE DETECTION & MAXIST AI API")
     print(f"  Server berjalan di : http://{host}:{port}")
     print(f"  Dokumentasi Swagger: http://localhost:{port}/apidocs")
-    print("=" * 65)
+    print("=" * 70)
 
     app.run(host=host, port=port, debug=False)
