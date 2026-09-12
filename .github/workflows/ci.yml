@@ -1,0 +1,52 @@
+name: Flask CI Pipeline
+
+# ==============================================================================
+# GitHub Actions CI Workflow: Pomelo Leaf Disease Detection & Chatbot API
+# Menjalankan pengujian otomatis, linting kode, dan validasi build Docker image
+# setiap ada aktivitas push atau pull request ke branch main.
+# ==============================================================================
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build, Lint, Test, and Docker Dry-Run
+    runs-on: ubuntu-latest
+
+    steps:
+      # Langkah 1: Checkout kode dari repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Langkah 2: Setup environment Python 3.10 dengan caching pip
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      # Langkah 3: Upgrade pip dan install semua dependencies aplikasi
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Langkah 4: Linter kode menggunakan Flake8
+      - name: Lint with Flake8
+        run: |
+          # Menghentikan eksekusi jika ada syntax error atau undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      # Langkah 5: Menjalankan pengujian otomatis menggunakan Pytest
+      - name: Run Tests with Pytest
+        run: |
+          pytest tests/
+
+      # Langkah 6: Pengujian build container Docker (Dry-run build)
+      - name: Docker Dry-Run Build
+        run: |
+          docker build -t flask-ai-api .
